@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="PlateRate calculates the ingredient cost of homemade recipes."
+    />
+    <title>PlateRate — Recipe Cost Calculator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <div class="app-shell">
+      <header class="app-header">
+        <div class="brand-block">
+          <div class="brand">
+            <span class="brand-plate" aria-hidden="true"></span>
+            <span class="brand-name"
+              >Plate<span class="brand-accent">Rate</span></span
+            >
+          </div>
+        </div>
+
+        <div class="recipe-toolbar">
+          <div class="recipe-picker">
+            <label for="recipe-select">Saved recipes</label>
+            <select id="recipe-select" name="recipeSelect"></select>
+          </div>
+
+          <div class="toolbar-actions">
+            <button type="button" class="button button--quiet" id="new-recipe">
+              New recipe
+            </button>
+            <button
+              type="button"
+              class="button button--quiet"
+              id="import-recipes"
+            >
+              Import
+            </button>
+            <button
+              type="button"
+              class="button button--quiet"
+              id="export-recipes"
+            >
+              Export
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="app-notice" id="app-notice" hidden>
+        <p class="app-notice-text" id="app-notice-text" role="status"></p>
+        <button
+          type="button"
+          class="notice-dismiss"
+          id="notice-dismiss"
+          aria-label="Dismiss message"
+        >
+          ×
+        </button>
+      </div>
+
+      <input
+        type="file"
+        id="import-file"
+        accept=".json,application/json"
+        aria-label="Import recipe backup file"
+        hidden
+      />
+
+      <main id="main-content" class="app-main" tabindex="-1">
+        <h1 class="sr-only">PlateRate recipe cost calculator</h1>
+
+        <div class="workspace-top">
+          <section
+            class="panel recipe-panel"
+            aria-labelledby="recipe-settings-heading"
+          >
+            <div class="panel-heading">
+              <h2 id="recipe-settings-heading" class="panel-title">
+                Recipe setup
+              </h2>
+              <p class="panel-kicker">Name, yield &amp; batch</p>
+            </div>
+
+            <div class="field">
+              <label for="recipe-name">Recipe name</label>
+              <input
+                id="recipe-name"
+                name="recipeName"
+                type="text"
+                placeholder="Untitled recipe"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+
+            <div class="yield-fields">
+              <div class="field">
+                <label for="yield-quantity">Yield quantity</label>
+                <input
+                  id="yield-quantity"
+                  name="yieldQuantity"
+                  type="number"
+                  min="0"
+                  step="any"
+                  inputmode="decimal"
+                  placeholder="0"
+                />
+              </div>
+
+              <div class="field field--yield-description">
+                <label for="yield-description">Yield description</label>
+                <input
+                  id="yield-description"
+                  name="yieldDescription"
+                  type="text"
+                  placeholder="servings"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+              </div>
+            </div>
+
+            <fieldset class="scale-control">
+              <legend class="sr-only">Batch scale</legend>
+
+              <div class="scale-heading">
+                <span class="scale-caption">Batch scale</span>
+                <span
+                  class="scale-readout"
+                  id="active-multiplier"
+                  aria-live="polite"
+                  >1×</span
+                >
+              </div>
+
+              <div
+                class="scale-presets"
+                role="group"
+                aria-label="Preset batch scales"
+              >
+                <button
+                  type="button"
+                  class="scale-button"
+                  data-scale="0.5"
+                  aria-pressed="false"
+                  aria-label="Scale to half batch"
+                >
+                  <span aria-hidden="true">½×</span>
+                </button>
+                <button
+                  type="button"
+                  class="scale-button"
+                  data-scale="1"
+                  aria-pressed="true"
+                  aria-label="Scale to original batch"
+                >
+                  <span aria-hidden="true">1×</span>
+                </button>
+                <button
+                  type="button"
+                  class="scale-button"
+                  data-scale="2"
+                  aria-pressed="false"
+                  aria-label="Scale to double batch"
+                >
+                  <span aria-hidden="true">2×</span>
+                </button>
+              </div>
+
+              <label class="custom-scale-field" for="custom-scale">
+                <span class="custom-scale-label">Custom multiplier</span>
+                <span class="custom-scale-input-wrap">
+                  <input
+                    id="custom-scale"
+                    name="customScale"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    inputmode="decimal"
+                    value="1"
+                    aria-describedby="scale-hint scale-error"
+                  />
+                  <span class="scale-suffix" aria-hidden="true">×</span>
+                </span>
+              </label>
+
+              <p class="scale-hint" id="scale-hint">
+                Scales recipe usage and yield together. Purchase prices stay
+                fixed.
+              </p>
+              <p class="field-error" id="scale-error" role="alert" hidden></p>
+            </fieldset>
+
+            <div class="recipe-panel-footer">
+              <p
+                class="save-status"
+                id="save-status"
+                title="Recipes are stored in this browser"
+              >
+                Saved locally
+              </p>
+              <button
+                type="button"
+                class="text-button"
+                id="delete-recipe"
+              >
+                Delete recipe
+              </button>
+              <div class="delete-confirm" id="delete-confirm" hidden>
+                <p class="delete-warning" id="delete-warning" role="alert"></p>
+                <div class="delete-confirm-actions">
+                  <button
+                    type="button"
+                    class="button button--danger"
+                    id="confirm-delete"
+                  >
+                    Delete recipe
+                  </button>
+                  <button type="button" class="button" id="cancel-delete">
+                    Keep recipe
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            class="panel summary-panel"
+            aria-labelledby="summary-heading"
+          >
+            <div class="panel-heading">
+              <h2 id="summary-heading" class="panel-title">Cost summary</h2>
+              <p class="panel-kicker">Ingredient costs only</p>
+            </div>
+
+            <div class="summary-heroes">
+              <div class="summary-hero">
+                <div class="summary-label-row">
+                  <p class="summary-label" id="summary-total-label">
+                    Total ingredient cost
+                  </p>
+                  <span class="badge" id="summary-partial-badge" hidden>
+                    Partial
+                  </span>
+                </div>
+                <p class="summary-value summary-value--hero" id="summary-total">
+                  —
+                </p>
+                <p class="summary-detail" id="summary-total-detail">
+                  No ingredients yet
+                </p>
+              </div>
+
+              <div class="summary-hero">
+                <p class="summary-label" id="summary-per-item-label">
+                  Per serving
+                </p>
+                <p
+                  class="summary-value summary-value--hero"
+                  id="summary-per-item"
+                >
+                  —
+                </p>
+                <p class="summary-detail" id="summary-per-item-detail">
+                  Enter a yield
+                </p>
+              </div>
+            </div>
+
+            <dl class="summary-meta">
+              <div class="summary-meta-item">
+                <dt>Ingredients</dt>
+                <dd id="summary-ingredient-count">0</dd>
+              </div>
+              <div class="summary-meta-item">
+                <dt>Yield</dt>
+                <dd>
+                  <span id="summary-yield">Not set</span>
+                  <span
+                    class="summary-meta-detail"
+                    id="summary-yield-detail"
+                    hidden
+                  ></span>
+                </dd>
+              </div>
+              <div class="summary-meta-item">
+                <dt>Batch</dt>
+                <dd id="summary-scale">1×</dd>
+              </div>
+            </dl>
+
+            <p
+              class="summary-note"
+              id="summary-note"
+              role="status"
+              aria-live="polite"
+              hidden
+            ></p>
+          </section>
+        </div>
+
+        <section class="ingredients-panel" aria-labelledby="ingredients-heading">
+          <div class="section-heading">
+            <div>
+              <h2 id="ingredients-heading">Ingredients</h2>
+              <p class="section-hint">
+                Purchase data, recipe usage, and calculated cost. If weight and
+                volume are mixed, choose an ingredient density to convert.
+                Scaling changes usage and yield, never purchase prices.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="button button--primary"
+              id="add-ingredient"
+              hidden
+            >
+              <span aria-hidden="true">+ </span>Add ingredient
+            </button>
+          </div>
+
+          <div class="table-frame" id="ingredient-table" hidden>
+            <table>
+              <caption class="sr-only">
+                Recipe ingredients and calculated costs
+              </caption>
+              <thead>
+                <tr class="table-group-row" aria-hidden="true">
+                  <th scope="col"></th>
+                  <th scope="colgroup" colspan="3">Purchased item</th>
+                  <th scope="colgroup" colspan="3" class="group-heading--recipe">
+                    Recipe usage
+                  </th>
+                  <th scope="col"></th>
+                  <th scope="col"></th>
+                </tr>
+                <tr>
+                  <th scope="col">Ingredient</th>
+                  <th scope="col" class="numeric">Purchase qty</th>
+                  <th scope="col">Purchase unit</th>
+                  <th scope="col" class="numeric">Purchase price</th>
+                  <th scope="col" class="numeric group-start">Recipe qty</th>
+                  <th scope="col">Recipe unit</th>
+                  <th scope="col">Weight ↔ volume</th>
+                  <th scope="col" class="numeric">Cost / share</th>
+                  <th scope="col">
+                    <span class="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="ingredient-rows"></tbody>
+            </table>
+          </div>
+
+          <div class="empty-state" id="ingredient-empty">
+            <span class="empty-plate" aria-hidden="true"></span>
+            <p class="empty-title">No ingredients yet</p>
+            <p class="empty-copy">
+              Add the first ingredient to start calculating this recipe's cost.
+            </p>
+            <button
+              type="button"
+              class="button button--primary"
+              id="empty-add-ingredient"
+            >
+              <span aria-hidden="true">+ </span>Add ingredient
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <div class="footer-brand">
+          <p>PlateRate</p>
+          <p class="footer-note">Recipes are stored in this browser</p>
+        </div>
+        <p class="footer-note">
+          Ingredient costs only · full precision internally · values rounded for
+          display
+        </p>
+      </footer>
+    </div>
+
+    <noscript>
+      <p class="noscript-message">
+        PlateRate requires JavaScript to calculate recipe costs.
+      </p>
+    </noscript>
+
+    <script src="js/units.js" defer></script>
+    <script src="js/densities.js" defer></script>
+    <script src="js/calculations.js" defer></script>
+    <script src="js/format.js" defer></script>
+    <script src="js/storage.js" defer></script>
+    <script src="js/app.js" defer></script>
+  </body>
+</html>
